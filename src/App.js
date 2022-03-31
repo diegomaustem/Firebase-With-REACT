@@ -5,7 +5,7 @@ import firebase from "./firebaseConnection";
 function App() {
   const [titulo, setTitulo] = useState('');
   const [autor, setAutor] = useState('');
-  
+  const [posts, setPosts] = useState([]);
 
   async function handleAdd(){
 
@@ -36,19 +36,24 @@ function App() {
   async function searchPost(){
 
     await firebase.firestore().collection('posts')
-    .doc('bmu5EIJxmPEHhPzEvNt4')
     .get()
     .then((snapshot)=>{
+      let lista = [];
 
-      setTitulo(snapshot.data().titulo);
-      setAutor(snapshot.data().autor);
+      snapshot.forEach((doc)=>{
+        lista.push({
+          id: doc.id,
+          titulo: doc.data().titulo,
+          autor: doc.data().autor
+        })
+      })
+
+      setPosts(lista);
 
     })
     .catch((error)=>{
       alert('Ops, foi gerado algum error!' + error)
     })
-
-    
 
   }
 
