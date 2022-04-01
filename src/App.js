@@ -1,82 +1,150 @@
-import { useState } from 'react';
+
+import {useState, useEffect} from 'react';
 import './style.css';
-import firebase from "./firebaseConnection";
+
+import firebase from './firebaseConnection';
 
 function App() {
+  const [idPost, setIdPost] = useState('');
   const [titulo, setTitulo] = useState('');
   const [autor, setAutor] = useState('');
-  
+  const [posts, setPosts] = useState([]);
+
+
+  useEffect(()=>{
+    async function loadPosts(){
+      await firebase.firestore().collection('posts')
+      .onSnapshot((doc)=>{
+        let meusPosts = [];
+
+        doc.forEach((item)=>{
+          meusPosts.push({
+            id: item.id,
+            titulo: item.data().titulo,
+            autor: item.data().autor,
+          })
+        });
+
+        setPosts(meusPosts);
+
+      })
+    }
+
+    loadPosts();
+
+  }, []);
+
 
   async function handleAdd(){
-
-    if(titulo.length === 0 || autor.length === 0){
-        alert('Erro, não foi possivel realizar a inserção!')
-        return;
-    }
     
     await firebase.firestore().collection('posts')
     .add({
       titulo: titulo,
-      autor: autor
+      autor: autor,
     })
-    /*.doc('bmu5EIJxmPEHhPzEvNt4')
-    .set({
-        titulo: titulo,
-        autor: autor
-    })*/
     .then(()=>{
-      alert('Dados casdatrados com sucesso!')
+      console.log('DADOS CADASTRADO COM SUCESSO!');
+      setTitulo('');
+      setAutor('');
     })
     .catch((error)=>{
-      alert('Ops, foi gerado algum error!' + error)
+      console.log('GEROU ALGUM ERRO: ' + error);
     })
 
   }
 
-  async function searchPost(){
+
+  async function buscaPost(){
+    //  await firebase.firestore().collection('posts')
+    //  .doc('123')
+    //  .get()
+    //  .then((snapshot)=>{
+
+    //   setTitulo(snapshot.data().titulo);
+    //   setAutor(snapshot.data().autor);
+
+    //  })
+    //  .catch(()=>{
+    //    console.log('DEU ALGUM ERRO')
+    //  })
 
     await firebase.firestore().collection('posts')
-    .doc('bmu5EIJxmPEHhPzEvNt4')
     .get()
     .then((snapshot)=>{
+      let lista = [];
 
-      setTitulo(snapshot.data().titulo);
-      setAutor(snapshot.data().autor);
+      snapshot.forEach((doc)=>{
+        lista.push({
+          id: doc.id,
+          titulo: doc.data().titulo,
+          autor: doc.data().autor
+        })
+      })
+
+      setPosts(lista);
 
     })
-    .catch((error)=>{
-      alert('Ops, foi gerado algum error!' + error)
+    .catch(()=>{
+      console.log('DEU ALGUM ERRO!');
     })
 
-    
 
   }
+
+  async function editarPost(){
+    await firebase.firestore().collection('posts')
+    .doc(idPost)
+    .update({
+      titulo: titulo,
+      autor: autor
+    })
+    .then(()=>{
+      console.log('DADOS ATUALIZADOS COM SUCESSO!');
+      setIdPost('');
+      setTitulo('');
+      setAutor('');
+    })
+    .catch(()=>{
+      console.log('ERRO AO ATUALIZAR');
+    });
+
+
+  }
+
 
   return (
     <div>
-          <h1>FIRE + REACT</h1><br/>
-          <div className='container'>
-            <label>Título: </label>
-            <textarea type='text' value={titulo} onChange={ (e) => setTitulo(e.target.value)}/>
+      <h1>ReactJS + Firebase :)</h1> <br/>
 
-            <label>Autor: </label>
-            <textarea type='text' value={autor} onChange={ (e) => setAutor(e.target.value)}/><br/>
+    <div className="container">
 
-            <button onClick={ handleAdd }>Cadastrar</button><br/>
-            <button onClick={ searchPost }>Buscar Post</button><br/>
+    <label>ID: </label>
+    <input type="text" value={idPost} onChange={ (e) => setIdPost(e.target.value)} />
 
-            <ul>
-                {posts.map((post)=>{
-                    return(
-                      <li key={post.id}>
-                          <span>Título: {post.titulo}</span><br/>
-                          <span>Autor: {post.autor}</span><br/>
-                      </li>
-                    )
-                })}
-            </ul>
+    <label>Titulo: </label>
+    <textarea type="text" value={titulo} onChange={ (e) => setTitulo(e.target.value)} />
 
-          </div>          
+    <label>Autor: </label>
+    <input type="text" value={autor} onChange={ (e) => setAutor(e.target.value) }  />
+
+    <button onClick={ handleAdd }>Cadastrar</button>
+    <button onClick={ buscaPost }>Buscar Post</button>
+    <button onClick={ editarPost }>Editar</button> <br/>
+
+    <ul>
+      {posts.map((post)=>{
+        return(
+          <li key={post.id} >
+            <span>ID - {post.id} </span> <br/>
+            <span>Titulo: {post.titulo} </span> <br/>
+            <span>Autor: {post.autor} </span> <br/> <br/>
+          </li>
+        )
+      })}
+    </ul>
+
+    </div>
+
     </div>
   );
 }
