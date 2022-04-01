@@ -12,6 +12,8 @@ function App() {
 
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
+  const [user, setUser] = useState(false);
+  const [userLogged, setUserLogged] = useState({});
 
   useEffect(()=>{
     async function loadPosts(){
@@ -33,6 +35,31 @@ function App() {
     }
 
     loadPosts();
+
+  }, []);
+
+
+  useEffect(()=>{
+    
+    async function checkLogin(){
+     await firebase.auth().onAuthStateChanged((user)=>{
+      if(user){
+        setUser(true);
+        setUserLogged({
+          uid: user.uid,
+          email: user.email
+        })
+        //se tem usuario logado entra aqui dentro...
+      }else{
+        //nao possui nenhum user logado.
+        setUser(false);
+        setUserLogged({});
+      }
+     })
+    }
+
+    checkLogin();
+
 
   }, []);
 
@@ -132,7 +159,7 @@ function App() {
       if(error.code === 'auth/weak-password'){
         alert('Senha muito fraca..')
       }else if(error.code === 'auth/email-already-in-use'){
-        alert('Esse email jรก existe!');
+        alert('Esse email já existe!');
       }
 
     })
@@ -141,10 +168,34 @@ function App() {
   }
 
 
+  async function logout(){
+    await firebase.auth().signOut();
+  }
+
+
+  async function fazerLogin(){
+    await firebase.auth().signInWithEmailAndPassword(email, senha)
+    .then((value)=>{
+      console.log(value.user);
+    })
+    .catch((error)=>{
+      console.log('ERRO AO FAZER O LOGIN' + error);
+    })
+  }
+
+
   return (
     <div>
       <h1>ReactJS + Firebase :)</h1> <br/>
 
+
+      {user && (
+        <div>
+          <strong>Seja bem vindo! (Você está logado!)</strong> <br/>
+          <span>{userLogged.uid} -  {userLogged.email}</span>
+          <br/> <br/>
+        </div>
+      )}
 
     <div className="container">
       <label>Email</label>
@@ -153,7 +204,9 @@ function App() {
       <label>Senha</label>
       <input type="password" value={senha} onChange={ (e) => setSenha(e.target.value) } /> <br/> 
 
-      <button onClick={ novoUsuario }>Cadastrar</button>     
+      <button onClick={ fazerLogin } >Fazer Login</button>
+      <button onClick={ novoUsuario }>Cadastrar</button>
+      <button onClick={ logout } >Sair da conta!</button> 
     </div>
 
 
